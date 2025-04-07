@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #00ff55 0%, #6b73ff 100%);
+        }
+        .receipt-preview {
+            max-height: 200px;
+            object-fit: contain;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+        }
+        .payment-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .payment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        .file-input-label {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .file-input-label:hover {
+            background-color: #f0f4ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="gradient-bg text-white py-6 px-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold flex items-center text-green-800">
+                <i class="fas fa-wallet mr-3"></i> Nexlogic Payment Portal
+            </h1>
+            <div class="flex items-center space-x-4">
+                <span class="hidden md:inline-block">Welcome!</span>
+                <div class="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center font-bold">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Chatbot Container -->
+    <div class="chatbot-container">
+        <div id="chatbot" class="chatbot">
+            <div class="chatbot-header">
+                <div>
+                    <h3 class="font-medium">Photo Approval Assistant</h3>
+                    <p class="text-xs opacity-80">Ask me anything about the process</p>
+                </div>
+                <button id="closeChatbot" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="chatbotMessages" class="chatbot-messages">
+                <div class="message bot-message">
+                    Hello! I'm here to help you with the photo approval process. What would you like to know?
+                </div>
+                <div class="message bot-message">
+                    You can ask me about:
+                    <ul class="list-disc pl-5 mt-1 space-y-1">
+                        <li>How to upload photos</li>
+                        <li>Approval guidelines</li>
+                        <li>Status of your submission</li>
+                        <li>Common rejection reasons</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input id="chatbotInput" type="text" placeholder="Type your question here..." class="focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <button id="sendMessage">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        <div id="chatbotToggle" class="chatbot-toggle">
+            <i class="fas fa-comment-dots text-2xl"></i>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span id="toastMessage">Photo submitted successfully!</span>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Account Lookup Section -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-search mr-2 text-blue-500"></i> Find Your Payments
+                </h2>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <label for="accountNumber" class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                        <div class="relative">
+                            <input type="text" id="accountNumber" placeholder="Enter your account number" 
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="lookupBtn" class="gradient-bg text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition flex items-center">
+                            <i class="fas fa-search mr-2"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Details Section (Initially hidden) -->
+            <div id="paymentDetails" class="hidden bg-white rounded-xl shadow-md p-6 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-receipt mr-2 text-green-500"></i> Payment History
+                    </h2>
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+                        <i class="fas fa-check-circle mr-1"></i> Active Account
+                    </span>
+                </div>
+
+                <!-- Latest Payment Card -->
+                <div class="payment-card bg-gray-50 rounded-lg p-5 mb-6 border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Latest Payment</h3>
+                            <p class="text-sm text-gray-500">Processed on <span id="paymentDate" class="font-medium">May 15, 2023</span></p>
+                        </div>
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Completed</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Amount</p>
+                            <p id="paymentAmount" class="text-xl font-bold text-gray-800">$1,250.00</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Payment Method</p>
+                            <p id="paymentMethod" class="text-lg font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-credit-card mr-2 text-blue-500"></i> Credit Card
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Reference Number</p>
+                            <p id="referenceNumber" class="text-lg font-medium text-gray-800">PAY-78945612</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Upload Section -->
+                <div class="bg-white border border-gray-200 rounded-lg p-5">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-file-upload mr-2 text-purple-500"></i> Upload Payment Receipt
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Upload a clear image of your payment receipt for verification purposes.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- File Upload Area -->
+                        <div class="flex-1">
+                            <input type="file" id="receiptUpload" accept="image/*" class="hidden">
+                            <label for="receiptUpload" class="file-input-label block border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition">
+                                <div class="flex flex-col items-center justify-center">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                                    <p class="text-sm text-gray-600 mb-1">Drag & drop your receipt here</p>
+                                    <p class="text-xs text-gray-500">or click to browse (JPG, PNG, PDF)</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Preview Area -->
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Receipt Preview</h4>
+                            <div class="flex items-center justify-center bg-gray-100 rounded-lg p-4 h-full">
+                                <img id="receiptPreview" src="" alt="Receipt preview" class="receipt-preview hidden w-full">
+                                <div id="noPreview" class="text-center text-gray-500">
+                                    <i class="fas fa-image text-3xl mb-2"></i>
+                                    <p>No receipt selected</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end">
+                        <button id="submitReceipt" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 transition flex items-center disabled:opacity-50" disabled>
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="bg-blue-50 rounded-xl p-6 mt-8 border border-blue-100">
+                <h3 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                    <i class="fas fa-question-circle mr-2"></i> Need Help?
+                </h3>
+                <p class="text-sm text-blue-700 mb-4">If you're having trouble finding your payment information or uploading receipts, our support team is here to help.</p>
+                <button class="text-blue-600 font-medium flex items-center hover:text-blue-800">
+                    <i class="fas fa-headset mr-2"></i> Contact Support
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- How It Works Section -->
+        <div class="max-w-4xl mx-auto mt-16">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 mb-8">How It Works</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-upload text-2xl text-indigo-600"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">1. Upload Your Photo</h3>
+                    <p class="text-gray-500">
+                        Select your best photo and provide some details about it.
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-users text-2xl text-indigo-600"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">2. Team Review</h3>
+                    <p class="text-gray-500">
+                        Our team will review your photo in the Telegram group and vote on it.
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-bell text-2xl text-indigo-600"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">3. Get Notified</h3>
+                    <p class="text-gray-500">
+                        Receive approval or rejection notification with feedback.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Account lookup functionality
+            const lookupBtn = document.getElementById('lookupBtn');
+            const paymentDetails = document.getElementById('paymentDetails');
+            const accountNumberInput = document.getElementById('accountNumber');
+            //const progressContainer = document.getElementById('progressContainer');
+           //const progressBar = document.getElementById('progressBar');
+            //const progressPercent = document.getElementById('progressPercent');
+
+            // Chatbot Elements
+            const chatbot = document.getElementById('chatbot');
+            const chatbotToggle = document.getElementById('chatbotToggle');
+            const closeChatbot = document.getElementById('closeChatbot');
+            const chatbotMessages = document.getElementById('chatbotMessages');
+            const chatbotInput = document.getElementById('chatbotInput');
+            const sendMessage = document.getElementById('sendMessage');
+
+            // Show toast notification
+            function showToast(message, isError = false) {
+                toastMessage.textContent = message;
+                toast.className = isError ? 'toast show bg-red-500' : 'toast show bg-indigo-600';
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // Chatbot toggle functionality
+            chatbotToggle.addEventListener('click', () => {
+                chatbot.classList.toggle('active');
+                chatbotToggle.classList.add('hidden');
+            });
+
+            closeChatbot.addEventListener('click', () => {
+                chatbot.classList.remove('active');
+                chatbotToggle.classList.remove('hidden');
+            });
+
+            // Send message functionality
+            function sendUserMessage() {
+                const message = chatbotInput.value.trim();
+                if (message) {
+                    // Add user message
+                    addMessage(message, 'user');
+                    chatbotInput.value = '';
+                    
+                    // Show typing indicator
+                    showTypingIndicator();
+                    
+                    // Simulate bot response after a delay
+                    setTimeout(() => {
+                        removeTypingIndicator();
+                        const botResponse = getBotResponse(message);
+                        addMessage(botResponse, 'bot');
+                        
+                        // Scroll to bottom
+                        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+                    }, 1000 + Math.random() * 2000);
+                }
+            }
+
+            sendMessage.addEventListener('click', sendUserMessage);
+            chatbotInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendUserMessage();
+                }
+            });
+
+            function addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(sender === 'bot' ? 'bot-message' : 'user-message');
+                messageDiv.textContent = text;
+                chatbotMessages.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            }
+
+            function showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.classList.add('typing-indicator');
+                typingDiv.id = 'typingIndicator';
+                
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('typing-dot');
+                    typingDiv.appendChild(dot);
+                }
+                
+                chatbotMessages.appendChild(typingDiv);
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            }
+
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+
+            function getBotResponse(message) {
+                const lowerMessage = message.toLowerCase();
+                
+                if (lowerMessage.includes('upload') || lowerMessage.includes('submit')) {
+                    return "To upload a photo, simply drag and drop your image file into the upload area or click to browse your files. Make sure to add a title and description before submitting.";
+                } else if (lowerMessage.includes('guideline') || lowerMessage.includes('rule')) {
+                    return "Our photo guidelines require:\n1. High quality images (minimum 1200px on the long side)\n2. No copyrighted material\n3. Appropriate content\n4. Properly exposed and focused\n5. No watermarks or logos";
+                } else if (lowerMessage.includes('status') || lowerMessage.includes('check')) {
+                    return "Approval typically takes 24-48 hours. You'll see the status update on this page and receive an email notification once a decision is made.";
+                } else if (lowerMessage.includes('reject') || lowerMessage.includes('deny')) {
+                    return "Common rejection reasons include:\n- Low image quality\n- Copyright violations\n- Inappropriate content\n- Watermarks or logos\n- Poor composition\nIf your photo is rejected, you'll receive specific feedback.";
+                } else if (lowerMessage.includes('telegram') || lowerMessage.includes('group')) {
+                    return "Our review team uses a private Telegram group to evaluate submissions. Each photo is voted on by multiple team members to ensure fair decisions.";
+                } else if (lowerMessage.includes('time') || lowerMessage.includes('long')) {
+                    return "The approval process usually takes 24-48 hours. During peak times it might take slightly longer. We appreciate your patience!";
+                } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {
+                    return "I can help with questions about the upload process, guidelines, approval status, and common issues. What specifically would you like to know?";
+                } else {
+                    return "I'm not sure I understand. Could you rephrase your question? I can help with information about the upload process, guidelines, or approval status.";
+                }
+            }
+            
+            lookupBtn.addEventListener('click', function() {
+                if (accountNumberInput.value.trim() === '') {
+                    alert('Please enter your account number');
+                    return;
+                }
+                
+                // Simulate API call with mock data
+                setTimeout(() => {
+                    // Update payment details with mock data
+                    document.getElementById('paymentDate').textContent = new Date().toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    
+                    document.getElementById('paymentAmount').textContent = '$' + (Math.random() * 1000 + 500).toFixed(2);
+                    
+                    const methods = ['Gcash', 'Bank Transfer', 'PayPal', 'Debit Card'];
+                    const randomMethod = methods[Math.floor(Math.random() * methods.length)];
+                    document.getElementById('paymentMethod').innerHTML = 
+                        `<i class="fas ${randomMethod === 'Credit Card' ? 'fa-credit-card' : randomMethod === 'Bank Transfer' ? 'fa-university' : randomMethod === 'PayPal' ? 'fa-paypal' : 'fa-credit-card'} mr-2 text-blue-500"></i> ${randomMethod}`;
+                    
+                    document.getElementById('referenceNumber').textContent = 
+                        'PAY-' + Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
+                    
+                    // Show payment details
+                    paymentDetails.classList.remove('hidden');
+                    
+                    // Scroll to payment details
+                    paymentDetails.scrollIntoView({ behavior: 'smooth' });
+                }, 800);
+            });
+            
+            // Receipt upload functionality
+            const receiptUpload = document.getElementById('receiptUpload');
+            const receiptPreview = document.getElementById('receiptPreview');
+            const noPreview = document.getElementById('noPreview');
+            const submitReceipt = document.getElementById('submitReceipt');
+            
+            receiptUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.type.match('image.*')) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            receiptPreview.src = e.target.result;
+                            receiptPreview.classList.remove('hidden');
+                            noPreview.classList.add('hidden');
+                            submitReceipt.disabled = false;
+                        }
+                        
+                        reader.readAsDataURL(file);
+                    } else {
+                        alert('Please select an image file (JPG, PNG)');
+                        receiptUpload.value = '';
+                    }
+                }
+            });
+            
+            submitReceipt.addEventListener('click', function() {
+                // Simulate receipt submission
+                submitReceipt.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+                submitReceipt.disabled = true;
+                
+                setTimeout(() => {
+                    alert('Receipt submitted successfully! Our team will verify it shortly.');
+                    submitReceipt.innerHTML = '<i class="fas fa-check mr-2"></i> Submitted';
+                    
+                    // Reset after 3 seconds
+                    setTimeout(() => {
+                        receiptUpload.value = '';
+                        receiptPreview.src = '';
+                        receiptPreview.classList.add('hidden');
+                        noPreview.classList.remove('hidden');
+                        submitReceipt.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Submit Receipt';
+                        submitReceipt.disabled = true;
+                    }, 3000);
+                }, 1500);
+            });
+            
+            // Drag and drop functionality
+            const fileInputLabel = document.querySelector('.file-input-label');
+            
+            fileInputLabel.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileInputLabel.classList.add('border-blue-500', 'bg-blue-50');
+            });
+            
+            fileInputLabel.addEventListener('dragleave', () => {
+                fileInputLabel.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+            
+            fileInputLabel.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileInputLabel.classList.remove('border-blue-500', 'bg-blue-50');
+                
+                if (e.dataTransfer.files.length) {
+                    receiptUpload.files = e.dataTransfer.files;
+                    const event = new Event('change');
+                    receiptUpload.dispatchEvent(event);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
